@@ -16,6 +16,8 @@ namespace CCMS3.Extensions
             services.AddScoped<IPersonalDetailsService, PersonalDetailsServiceImpl>();
             services.AddScoped<UserService>();
             services.AddTransient<IEmailService, EmailServiceImpl>();
+            services.AddScoped<ICreditCardApplicationRepository,CreditCardApplicationRepositoryImpl>();
+            services.AddScoped<ICreditCardApplicationservice, CreditCardApplicationService>();
             return services;
         }
     }

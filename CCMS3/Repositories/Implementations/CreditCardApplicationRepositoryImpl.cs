@@ -4,6 +4,7 @@ using CCMS3.Eceptions;
 using CCMS3.Helpers.PageFilters;
 using CCMS3.Models;
 using CCMS3.Repositories.Interfaces;
+using CCMS3.Services.Implementations;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -13,14 +14,57 @@ namespace CCMS3.Repositories.Implementations
     {
 
         private readonly AppDbContext _context;
-        public CreditCardApplicationRepositoryImpl(AppDbContext context)
+        private readonly UserService _userService;
+        public CreditCardApplicationRepositoryImpl(AppDbContext context, UserService userService)
         {
             _context = context;
+            _userService = userService;
         }
 
-        public CreditCardApplication CreateCreditCardApplication(CreditCardApplication application, string applicantId)
+        public CreditCardApplicationResponse CreateCreditCardApplication(CreditCardApplicationRequest application, string applicantId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var personalDetails = _context.PersonalDetails.Find(_userService.GetUserId());
+                var applicationStatus = _context.ApplicationStatuses.Find(application.ApplicationStatusId);
+                var newApplication = new CreditCardApplication
+                {
+                    PersonalDetails = personalDetails!,
+                    AnnualIncome = application.AnnualIncome,
+                    ApplicationDate = application.ApplicationDate,
+                    LastModifiedDate = DateTime.Now,
+                    ApplicationStatus = applicationStatus!,
+                    Comments = "",
+                    Email = application.Email,
+                    PhoneNo = application.PhoneNo,
+                };
+
+                _context.CreditCardApplications.Add(newApplication);
+                if (_context.SaveChanges() > 0)
+                {
+                    var response = new CreditCardApplicationResponse
+                    {
+                        PhoneNo = newApplication.PhoneNo,
+                        Email = newApplication.Email,
+                        AnnualIncome = newApplication.AnnualIncome,
+                        ApplicationDate = newApplication.ApplicationDate,
+                        ApplicationStatus = newApplication.ApplicationStatus.Name,
+                        FullName = newApplication.PersonalDetails.User.FullName,
+                        Id = newApplication.Id
+                    };
+                    return response;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message, ex);
+                return null;
+            }
+
         }
 
         public void DeleteCreditCardApplication(int id)
@@ -54,7 +98,7 @@ namespace CCMS3.Repositories.Implementations
                 {
                     Id = ca.Id,
                     FullName = ca.PersonalDetails.User.FullName,
-                    MyProperty = ca.ApplicationDate,
+                    ApplicationDate = ca.ApplicationDate,
                     Email = ca.Email,
                     PhoneNo = ca.PhoneNo,
                     ApplicationStatusId = ca.ApplicationStatusId,
@@ -78,7 +122,7 @@ namespace CCMS3.Repositories.Implementations
             }
         }
 
-        public async Task<(int, IEnumerable<CreditCardApplicationResponse>)> GetAllApplicationsPaged(CreditCardApplicationParams _params)
+        public async Task<(int, IEnumerable<CreditCardApplicationResponse>)> GetAllApplicationsPaged(CreditCardApplicationParams Params)
         {
             try
             {
@@ -89,52 +133,52 @@ namespace CCMS3.Repositories.Implementations
                     .AsQueryable();
 
                 // Apply filters
-                if (_params.ApplicationStatusId.HasValue)
-                    query = query.Where(ca => ca.ApplicationStatusId == _params.ApplicationStatusId.Value);
+                if (Params.ApplicationStatusId.HasValue)
+                    query = query.Where(ca => ca.ApplicationStatusId == Params.ApplicationStatusId.Value);
 
-                if (!string.IsNullOrEmpty(_params.EmailContains))
-                    query = query.Where(ca => ca.Email.Contains(_params.EmailContains));
+                if (!string.IsNullOrEmpty(Params.EmailContains))
+                    query = query.Where(ca => ca.Email.Contains(Params.EmailContains));
 
-                if (!string.IsNullOrEmpty(_params.PhoneNoContains))
-                    query = query.Where(ca => ca.PhoneNo.Contains(_params.PhoneNoContains));
+                if (!string.IsNullOrEmpty(Params.PhoneNoContains))
+                    query = query.Where(ca => ca.PhoneNo.Contains(Params.PhoneNoContains));
 
-                if (_params.ApplicationDateBefore.HasValue)
-                    query = query.Where(ca => ca.ApplicationDate < _params.ApplicationDateBefore.Value);
+                if (Params.ApplicationDateBefore.HasValue)
+                    query = query.Where(ca => ca.ApplicationDate < Params.ApplicationDateBefore.Value);
 
-                if (_params.ApplicationDateAfter.HasValue)
-                    query = query.Where(ca => ca.ApplicationDate > _params.ApplicationDateAfter.Value);
+                if (Params.ApplicationDateAfter.HasValue)
+                    query = query.Where(ca => ca.ApplicationDate > Params.ApplicationDateAfter.Value);
 
-                if (!string.IsNullOrEmpty(_params.ApplicantFullNameContains))
+                if (!string.IsNullOrEmpty(Params.ApplicantFullNameContains))
                     query = query.Where(ca => (ca.PersonalDetails.User.FullName)
-                        .Contains(_params.ApplicantFullNameContains));
+                        .Contains(Params.ApplicantFullNameContains));
 
-                if (_params.MinAnnualIncome.HasValue)
-                    query = query.Where(ca => ca.PersonalDetails.AnnualIncome >= _params.MinAnnualIncome.Value);
+                if (Params.MinAnnualIncome.HasValue)
+                    query = query.Where(ca => ca.PersonalDetails.AnnualIncome >= Params.MinAnnualIncome.Value);
 
-                if (_params.MaxAnnualIncome.HasValue)
-                    query = query.Where(ca => ca.PersonalDetails.AnnualIncome <= _params.MaxAnnualIncome.Value);
+                if (Params.MaxAnnualIncome.HasValue)
+                    query = query.Where(ca => ca.PersonalDetails.AnnualIncome <= Params.MaxAnnualIncome.Value);
 
                 // Apply sorting
-                query = _params.SortBy switch
+                query = Params.SortBy switch
                 {
-                    "ApplicationDate" => _params.SortDescending ? query.OrderByDescending(ca => ca.ApplicationDate) : query.OrderBy(ca => ca.ApplicationDate),
-                    "AnnualIncome" => _params.SortDescending ? query.OrderByDescending(ca => ca.PersonalDetails.AnnualIncome) : query.OrderBy(ca => ca.PersonalDetails.AnnualIncome),
-                    _ => _params.SortDescending ? query.OrderByDescending(ca => ca.ApplicationStatus.Name) : query.OrderBy(ca => ca.ApplicationStatus.Name),
+                    "ApplicationDate" => Params.SortDescending ? query.OrderByDescending(ca => ca.ApplicationDate) : query.OrderBy(ca => ca.ApplicationDate),
+                    "AnnualIncome" => Params.SortDescending ? query.OrderByDescending(ca => ca.PersonalDetails.AnnualIncome) : query.OrderBy(ca => ca.PersonalDetails.AnnualIncome),
+                    _ => Params.SortDescending ? query.OrderByDescending(ca => ca.ApplicationStatus.Name) : query.OrderBy(ca => ca.ApplicationStatus.Name),
                 };
 
                 var totalRecords = query.Count();
 
                 // Apply pagination
                 query = query
-                    .Skip((_params.PageNumber - 1) * _params.PageSize)
-                    .Take(_params.PageSize);
+                    .Skip((Params.PageNumber - 1) * Params.PageSize)
+                    .Take(Params.PageSize);
 
                 // Project to CreditCardApplicationResponse
                 var result = await query.Select(ca => new CreditCardApplicationResponse
                 {
                     Id = ca.Id,
                     FullName = ca.PersonalDetails.User.FullName,
-                    MyProperty = ca.ApplicationDate,
+                    ApplicationDate = ca.ApplicationDate,
                     Email = ca.Email,
                     PhoneNo = ca.PhoneNo,
                     ApplicationStatusId = ca.ApplicationStatusId,
@@ -154,12 +198,31 @@ namespace CCMS3.Repositories.Implementations
 
         public CreditCardApplication? GetApplicationById(int id)
         {
-            return _context.CreditCardApplications.Find(id) ?? throw new EntityNotFoundException($"No application found with id: {id}");
+            return _context.CreditCardApplications
+                .Include(p => p.PersonalDetails)
+                .ThenInclude(u => u.User)
+                .Include(s => s.ApplicationStatus)
+                .FirstOrDefault(c=>c.Id == id) ?? throw new EntityNotFoundException($"No application found with id: {id}");
         }
 
         public CreditCardApplication UpdateCreditCardApplication(CreditCardApplicationRequest request)
         {
-            throw new NotImplementedException();
+            var application = _context.CreditCardApplications
+                .Include(p => p.PersonalDetails).ThenInclude(u => u.User).Include(s => s.ApplicationStatus)
+                .FirstOrDefault(c => c.Id == request.Id) ?? throw new EntityNotFoundException($"No application found with id: {request.Id}");
+
+            application.LastModifiedDate = DateTime.Now;
+            application.ApplicationStatus = _context.ApplicationStatuses.Find(application.ApplicationStatusId) ?? throw new InvalidDataException($"Error in fetching application status");
+
+            application.Email = request.Email;
+            application.PhoneNo = request.PhoneNo;
+            application.AnnualIncome = request.AnnualIncome;
+            application.PersonalDetails.User.FullName = request.FullName;
+
+            _context.Update(application);
+            _context.SaveChanges();
+
+            return application;
         }
     }
 }

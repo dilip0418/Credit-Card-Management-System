@@ -6,11 +6,11 @@ namespace CCMS3.Repositories.Interfaces
 {
     public interface ICreditCardApplicationRepository
     {
-        public CreditCardApplication CreateCreditCardApplication(CreditCardApplication application, string applicantId);
+        public CreditCardApplicationResponse CreateCreditCardApplication(CreditCardApplicationRequest application, string applicantId);
         public CreditCardApplication UpdateCreditCardApplication(CreditCardApplicationRequest request);
         public void DeleteCreditCardApplication(int id);
         public IEnumerable<CreditCardApplicationResponse> GetAllApplications();
-        public Task<(int, IEnumerable<CreditCardApplicationResponse>)> GetAllApplicationsPaged(CreditCardApplicationParams _params);
+        public Task<(int, IEnumerable<CreditCardApplicationResponse>)> GetAllApplicationsPaged(CreditCardApplicationParams Params);
         public CreditCardApplication? GetApplicationById(int id);
     }
 }

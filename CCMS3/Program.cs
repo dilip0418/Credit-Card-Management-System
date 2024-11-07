@@ -65,4 +65,7 @@ app.MapGroup("/api/roles")
 app.MapGroup("/api/personalDetails")
     .MapPersonalDetailsEnpoints();
 
+app.MapGroup("/api/creditCardApplications")
+    .MapCreditCardApplicationEnpoints();
+
 await app.RunAsync();
