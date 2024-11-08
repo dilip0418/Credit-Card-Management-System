@@ -23,10 +23,12 @@ namespace CCMS3.Repositories.Implementations
 
         public CreditCardApplicationResponse CreateCreditCardApplication(CreditCardApplicationRequest application, string applicantId)
         {
+            var transaction = _context.Database.BeginTransaction();
             try
             {
-                var personalDetails = _context.PersonalDetails.Find(_userService.GetUserId());
-                var applicationStatus = _context.ApplicationStatuses.Find(application.ApplicationStatusId);
+
+                var personalDetails = _context.PersonalDetails.Include(u => u.User).FirstOrDefault(u => u.UserId == _userService.GetUserId()) ?? throw new EntityNotFoundException("Failed to fetch PersonalDetails");
+                var applicationStatus = _context.ApplicationStatuses.Find(application.ApplicationStatusId) ?? throw new EntityNotFoundException("Failed to fetch Application Status");
                 var newApplication = new CreditCardApplication
                 {
                     PersonalDetails = personalDetails!,
@@ -40,7 +42,9 @@ namespace CCMS3.Repositories.Implementations
                 };
 
                 _context.CreditCardApplications.Add(newApplication);
-                if (_context.SaveChanges() > 0)
+                var affectedRows = _context.SaveChanges();
+
+                if (affectedRows > 0)
                 {
                     var response = new CreditCardApplicationResponse
                     {
@@ -54,17 +58,15 @@ namespace CCMS3.Repositories.Implementations
                     };
                     return response;
                 }
-                else
-                {
-                    return null;
-                }
+                transaction.Commit();
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Message, ex);
+                transaction.Rollback();
                 return null;
             }
-
+            return null;
         }
 
         public void DeleteCreditCardApplication(int id)
@@ -202,7 +204,7 @@ namespace CCMS3.Repositories.Implementations
                 .Include(p => p.PersonalDetails)
                 .ThenInclude(u => u.User)
                 .Include(s => s.ApplicationStatus)
-                .FirstOrDefault(c=>c.Id == id) ?? throw new EntityNotFoundException($"No application found with id: {id}");
+                .FirstOrDefault(c => c.Id == id) ?? throw new EntityNotFoundException($"No application found with id: {id}");
         }
 
         public CreditCardApplication UpdateCreditCardApplication(CreditCardApplicationRequest request)

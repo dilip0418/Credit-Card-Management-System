@@ -87,7 +87,7 @@ namespace CCMS3.Services.Implementations
                 var (totalRecords, details) = await _personalDetailsRepository.GetAllPersonalDetailsPaged(parameters);
                 if (totalRecords > 0)
                 {
-                    return new PagedResponse<PersonalDetailsRepsonse>(details, parameters.PageSize, parameters.PageNumber, totalRecords);
+                    return new PagedResponse<PersonalDetailsRepsonse>(details, totalRecords, parameters.PageNumber, details.Count());
                 }
                 else
                 {

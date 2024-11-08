@@ -10,7 +10,7 @@ namespace CCMS3.Services.Interfaces
         public CreditCardApplicationResponse UpdateCreditCardApplication(CreditCardApplicationRequest application);
         public bool DeleteCreditCardApplication(int id);
         public IEnumerable<CreditCardApplicationResponse> GetAllApplications();
-        public Task<(int, IEnumerable<CreditCardApplicationResponse>)> GetAllApplicationsPaged(CreditCardApplicationParams _params);
+        public Task<PagedResponse<CreditCardApplicationResponse>> GetAllApplicationsPaged(CreditCardApplicationParams _params);
         public CreditCardApplicationResponse? GetApplicationById(int id);
     }
 }

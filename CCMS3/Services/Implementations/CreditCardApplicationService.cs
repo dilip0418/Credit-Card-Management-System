@@ -26,7 +26,10 @@ namespace CCMS3.Services.Implementations
 
                 var newApplication = _creditCardApplicationRepository.CreateCreditCardApplication(application, applicantId);
 
-                return newApplication;
+                if (newApplication != null)
+                    return newApplication;
+                else
+                    throw new InvalidOperationException("Failed to apply application");
             }
             catch (Exception ex)
             {
@@ -54,18 +57,18 @@ namespace CCMS3.Services.Implementations
             return _creditCardApplicationRepository.GetAllApplications();
         }
 
-        public async Task<(int, IEnumerable<CreditCardApplicationResponse>)> GetAllApplicationsPaged(CreditCardApplicationParams _params)
+        public async Task<PagedResponse<CreditCardApplicationResponse>> GetAllApplicationsPaged(CreditCardApplicationParams _params)
         {
             try
             {
                 var applications = await _creditCardApplicationRepository.GetAllApplicationsPaged(_params);
                 if (applications.Item1 > 0)
                 {
-                    return applications;
+                    return new PagedResponse<CreditCardApplicationResponse>(applications.Item2, applications.Item1, _params.PageNumber, applications.Item2.Count());
                 }
                 else
                 {
-                    return (0, new List<CreditCardApplicationResponse>());
+                    return new PagedResponse<CreditCardApplicationResponse>([], 0, _params.PageNumber, applications.Item1);
                 }
             }
             catch (Exception ex)
