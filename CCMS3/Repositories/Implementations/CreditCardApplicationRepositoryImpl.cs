@@ -28,7 +28,8 @@ namespace CCMS3.Repositories.Implementations
             {
 
                 var personalDetails = _context.PersonalDetails.Include(u => u.User).FirstOrDefault(u => u.UserId == _userService.GetUserId()) ?? throw new EntityNotFoundException("Failed to fetch PersonalDetails");
-                var applicationStatus = _context.ApplicationStatuses.Find(application.ApplicationStatusId) ?? throw new EntityNotFoundException("Failed to fetch Application Status");
+                var applicationStatus = _context.ApplicationStatuses.Find(2) ?? throw new EntityNotFoundException("Failed to fetch Application Status"); // setting the application as "Applied".
+
                 var newApplication = new CreditCardApplication
                 {
                     PersonalDetails = personalDetails!,
@@ -205,6 +206,35 @@ namespace CCMS3.Repositories.Implementations
                 .ThenInclude(u => u.User)
                 .Include(s => s.ApplicationStatus)
                 .FirstOrDefault(c => c.Id == id) ?? throw new EntityNotFoundException($"No application found with id: {id}");
+        }
+
+        public CreditCardApplication UpdateApplicationStatus(ApplicationStatusUpdateRequest request)
+        {
+            var transaction = _context.Database.BeginTransaction();
+            try
+            {
+
+                var application = _context.CreditCardApplications
+                    .Include(p => p.PersonalDetails)
+                    .ThenInclude(u => u.User)
+                    .Include(s => s.ApplicationStatus)
+                    .FirstOrDefault(a => a.Id == request.Id) ?? throw new EntityNotFoundException("Failed to fetch Application");
+
+                var applicationStatus = _context.ApplicationStatuses.Find(request.Status) ?? throw new EntityNotFoundException("Failed to fetch Application Stautus");
+
+                application.ApplicationStatus = applicationStatus;
+                application.Comments = request.Comments;
+
+                _context.Update(application);
+                _context.SaveChanges();
+                transaction.Commit();
+                return application;
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         public CreditCardApplication UpdateCreditCardApplication(CreditCardApplicationRequest request)

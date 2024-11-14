@@ -12,12 +12,19 @@ namespace CCMS3.Extensions
         public static IServiceCollection InjectDependencies(this IServiceCollection services)
         {
             services.AddSingleton<FileStorageService>();
+            
             services.AddScoped<IPersonalDetailsRepository, PersonalDetailsRepositoryImpl>();
             services.AddScoped<IPersonalDetailsService, PersonalDetailsServiceImpl>();
+            
             services.AddScoped<UserService>();
+            
             services.AddTransient<IEmailService, EmailServiceImpl>();
+            
             services.AddScoped<ICreditCardApplicationRepository,CreditCardApplicationRepositoryImpl>();
             services.AddScoped<ICreditCardApplicationservice, CreditCardApplicationService>();
+
+            services.AddScoped<ICreditCardRepository, CreditCardRepository>();
+            services.AddScoped<ICreditCardService, CreditCardService>();
             return services;
         }
     }

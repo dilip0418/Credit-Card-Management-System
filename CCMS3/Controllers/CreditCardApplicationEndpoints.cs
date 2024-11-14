@@ -35,6 +35,15 @@ namespace CCMS3.Controllers
         public string ApplicationStatus { get; set; }
         public decimal AnnualIncome { get; set; }
     }
+
+    public class ApplicationStatusUpdateRequest
+    {
+        public int Id { get; set; }
+        public int Status { get; set; }
+        public string Comments { get; set; }
+    }
+
+    
     public static class CreditCardApplicationEndpoints
     {
         public static IEndpointRouteBuilder MapCreditCardApplicationEnpoints(this IEndpointRouteBuilder app)
@@ -164,7 +173,8 @@ namespace CCMS3.Controllers
         }
 
         [Authorize]
-        public static ApiResponse<bool> DeleteApplicationById([FromQuery] int id,
+        public static ApiResponse<bool> DeleteApplicationById(
+            [FromQuery] int id,
             ICreditCardApplicationservice creditCardApplicationservice)
         {
             try
@@ -175,6 +185,29 @@ namespace CCMS3.Controllers
             catch (Exception e)
             {
                 return new ApiResponse<bool>(StatusCodes.Status500InternalServerError, [e.Message]);
+            }
+        }
+
+        public static ApiResponse<string> UpdateApplicationStatus(
+            [FromBody] ApplicationStatusUpdateRequest request,
+            ICreditCardApplicationservice creditCardApplicationservice)
+        {
+
+            try
+            {
+                var response = creditCardApplicationservice.UpdateApplicationStatusAsync(request);
+                if (response.Result.Equals("Rejected"))
+                {
+                    return new ApiResponse<string>(StatusCodes.Status200OK, response.Result, "Status Updated");
+                }
+                else
+                {
+                    return new ApiResponse<string>(StatusCodes.Status200OK, response.Result, "Status Updated");
+                }
+            }
+            catch (Exception e)
+            {
+                return new ApiResponse<string>(StatusCodes.Status500InternalServerError, [e.Message]);
             }
         }
     }

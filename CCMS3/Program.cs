@@ -68,4 +68,9 @@ app.MapGroup("/api/personalDetails")
 app.MapGroup("/api/creditCardApplications")
     .MapCreditCardApplicationEnpoints();
 
+app.MapGroup("/api/creditCards")
+    .MapCreditCardEndpoints();
+
+
+
 await app.RunAsync();

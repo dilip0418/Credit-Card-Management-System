@@ -1,10 +1,10 @@
 ﻿using CCMS3.Controllers;
+using CCMS3.Helpers;
 using CCMS3.Helpers.PageFilters;
 using CCMS3.Models;
 using CCMS3.Repositories.Interfaces;
 using CCMS3.Services.Interfaces;
 using Serilog;
-using System.Collections.Generic;
 
 namespace CCMS3.Services.Implementations
 {
@@ -12,12 +12,24 @@ namespace CCMS3.Services.Implementations
     {
         private readonly ICreditCardApplicationRepository _creditCardApplicationRepository;
         private readonly UserService _userService;
+        private readonly ICreditCardService _creditCardService;
+        private readonly IEmailService _emailService;
+        private readonly IPersonalDetailsService _personalDetailsService;
 
-        public CreditCardApplicationService(ICreditCardApplicationRepository creditCardApplicationRepository, UserService userService)
+        public CreditCardApplicationService(
+            ICreditCardApplicationRepository creditCardApplicationRepository,
+            UserService userService,
+            ICreditCardService creditCardService,
+            IEmailService emailService,
+            IPersonalDetailsService personalDetailsService)
         {
             _creditCardApplicationRepository = creditCardApplicationRepository;
             _userService = userService;
+            _creditCardService = creditCardService;
+            _emailService = emailService;
+            _personalDetailsService = personalDetailsService;
         }
+
         public CreditCardApplicationResponse CreateCreditCardApplication(CreditCardApplicationRequest application)
         {
             try
@@ -93,6 +105,124 @@ namespace CCMS3.Services.Implementations
             };
         }
 
+        public async Task<string> UpdateApplicationStatusAsync(ApplicationStatusUpdateRequest request)
+        {
+            // Step 1: Update application Status
+            // 1. If application status is saved do nothing (just save) this feature is little unclear now
+
+            try
+            {
+                var application = _creditCardApplicationRepository.UpdateApplicationStatus(request);
+
+                if (application == null)
+                {
+                    return "Application Not found";
+                }
+
+                if (request.Status == 3) // Accepted
+                {
+                    // 2. If application status is Accepted Create a Credit using the Credentials from the PersonalDetails object and may be send a mail to the user with their card number
+                    try
+                    {
+                        return await HandleAcceptedApplicationAsync(application);
+                    }
+
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Message, ex);
+                        return "Application Status Updated, Falied to send Email";
+                    }
+                }
+                else if (request.Status == 4) // Rejected
+                {
+                    // 3. If the application is Rejected Then send a mail to the user with proper reason for rejection
+
+                    return await HandleRejectedApplicaitonAsync(application);
+                }
+                else
+                {
+                    return "Unknown Error Occured!";
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, e.Message);
+                return e.Message;
+            }
+
+        }
+
+        private async Task<string> HandleAcceptedApplicationAsync(CreditCardApplication application)
+        {
+            try
+            {
+                var userDetails = _personalDetailsService.GetPersonalDetailsById(application.PersonalDetailsId);
+
+                var creditLimitInterestRate = CreditCardGenerator.CalculateCreditLimitAndInterest(userDetails.AnnualIncome, userDetails.EmploymentStatusId);
+
+                var creditCardRequest = new CreditCardRequest
+                {
+                    ExpirationDate = DateTime.Now.AddYears(5),
+                    CardNumber = CreditCardGenerator.GenerateCardNumber("4", 16),
+                    CVV = int.Parse(CreditCardGenerator.GenerateCVV()),
+                    CardHolderName = userDetails.User.FullName,
+                    Balance = 0,
+                    IssuedDate = DateTime.Now,
+                    PersonalDetailsId = userDetails.UserId,
+                    CreditLimit = creditLimitInterestRate.CreditLimit,
+                    InterestRate = creditLimitInterestRate.InterestRate
+                };
+
+                var creditCard = _creditCardService.CreateCreditCard(creditCardRequest);
+
+                var emailPayload = new CreditCardResponse
+                {
+                    Balance = creditCard.Balance,
+                    CardHolderName = creditCard.CardHolderName,
+                    CardNumber = creditCard.CardNumber,
+                    CreditLimit = creditCard.CreditLimit,
+                    CVV = creditCard.CVV,
+                    ExpirationDate = creditCard.ExpirationDate,
+                    InterestRate = creditCard.InterestRate,
+                    IssuedDate = creditCard.IssuedDate,
+                };
+                //Initite mail sending service
+                await _emailService.SendAcceptedCreditCardStatus(emailPayload, userDetails.User.Email!);
+
+                return creditCard.CardNumber;
+
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, ex.Message);
+                throw;
+            }
+        }
+
+
+        private async Task<string> HandleRejectedApplicaitonAsync(CreditCardApplication application)
+        {
+            try
+            {
+                var userDetails = _personalDetailsService.GetPersonalDetailsById(application.PersonalDetailsId);
+                var emailPayload = new RejectedCreditCardResponse
+                {
+                    ApplicantMail = userDetails.User.Email!,
+                    FullName = userDetails.User.FullName,
+                    ApplicationStatus = application.ApplicationStatus.Name,
+                    reasonForRejection = application.Comments
+                };
+
+                await _emailService.SendRejectedCreditCardStatus(emailPayload);
+                return application.ApplicationStatus.Name;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, ex.Message);
+                throw;
+            }
+        }
+
         public CreditCardApplicationResponse UpdateCreditCardApplication(CreditCardApplicationRequest application)
         {
 
@@ -117,5 +247,16 @@ namespace CCMS3.Services.Implementations
                 throw;
             }
         }
+
+    }
+
+    public class RejectedCreditCardResponse
+    {
+        public string FullName { get; set; }
+        public string ApplicationStatus { get; set; }
+        public string reasonForRejection { get; set; }
+        public string ApplicantMail { get; set; }
+
+        // TODO: Add a link which let's the user re-edit and apply for the credit card.
     }
 }

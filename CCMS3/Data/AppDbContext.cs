@@ -17,6 +17,11 @@ namespace CCMS3.Data
         public DbSet<CreditCardApplication> CreditCardApplications { get; set; }
         public DbSet<ApplicationStatus> ApplicationStatuses { get; set; }
 
+        public DbSet<CreditCard> CreditCards { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<TransactionType> TransactionTypes { get; set; }
+        public DbSet<Category> Categories { get; set; }
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         { }
 
@@ -72,6 +77,39 @@ namespace CCMS3.Data
                 .WithMany(s => s.Cities)
                 .HasForeignKey(c => c.StateId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<CreditCard>(
+                entity =>
+                {
+                    entity.HasIndex(c => c.CardNumber).IsUnique();
+                    entity.HasIndex(c => c.CVV).IsUnique();
+                });
+
+            builder.Entity<Category>(entity =>
+            {
+                entity.HasData(
+                    new Category { Id = 1, CategoryName = "Groceries" },
+                    new Category { Id = 2, CategoryName = "Travel" },
+                    new Category { Id = 3, CategoryName = "Entertainment" },
+                    new Category { Id = 4, CategoryName = "Utilities" },
+                    new Category { Id = 5, CategoryName = "Health" },
+                    new Category { Id = 6, CategoryName = "Education" },
+                    new Category { Id = 7, CategoryName = "Shopping" },
+                    new Category { Id = 8, CategoryName = "Dining" },
+                    new Category { Id = 9, CategoryName = "Fuel" },
+                    new Category { Id = 10, CategoryName = "Rent" }
+                    );
+            });
+
+            builder.Entity<TransactionType>(
+                entity =>
+                {
+                    entity.HasData(
+                        new TransactionType { Id = 1, Type = "Purchase" },
+                        new TransactionType { Id = 2, Type = "Payment" }
+                        );
+                });
+
         }
     }
 }

@@ -12,5 +12,7 @@ namespace CCMS3.Repositories.Interfaces
         public IEnumerable<CreditCardApplicationResponse> GetAllApplications();
         public Task<(int, IEnumerable<CreditCardApplicationResponse>)> GetAllApplicationsPaged(CreditCardApplicationParams Params);
         public CreditCardApplication? GetApplicationById(int id);
+
+        public CreditCardApplication UpdateApplicationStatus(ApplicationStatusUpdateRequest request);
     }
 }
