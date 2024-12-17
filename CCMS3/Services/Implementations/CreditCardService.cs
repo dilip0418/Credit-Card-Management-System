@@ -12,13 +12,14 @@ namespace CCMS3.Services.Implementations
     {
 
         private readonly ICreditCardRepository _creditCardRepository;
-
+        private readonly ITransactionsRepository _transactionRespository;
         public CreditCardService(
-            ICreditCardRepository creditCardRepository
+            ICreditCardRepository creditCardRepository,
+            ITransactionsRepository transactionsRepository
             )
         {
             _creditCardRepository = creditCardRepository;
-
+            _transactionRespository = transactionsRepository;
         }
         public CreditCardResponse CreateCreditCard(CreditCardRequest request)
         {
@@ -100,7 +101,8 @@ namespace CCMS3.Services.Implementations
                         CVV = cr.CVV,
                         ExpirationDate = cr.ExpirationDate,
                         InterestRate = cr.InterestRate,
-                        IssuedDate = cr.IssuedDate
+                        IssuedDate = cr.IssuedDate,
+                        TotalAmountSpent = _transactionRespository.GetTotalTransactionAmountByCardId(cr.Id)
                     });
                 }
                 else
@@ -120,6 +122,8 @@ namespace CCMS3.Services.Implementations
             try
             {
                 var creditCard = _creditCardRepository.GetCreditCardById(id);
+                var totalAmountSpent = _transactionRespository.GetTotalTransactionAmountByCardId(creditCard.Id);
+
                 if (creditCard == null)
                     return null;
                 else
@@ -134,7 +138,8 @@ namespace CCMS3.Services.Implementations
                         CVV = creditCard.CVV,
                         ExpirationDate = creditCard.ExpirationDate,
                         InterestRate = creditCard.InterestRate,
-                        IssuedDate = creditCard.IssuedDate
+                        IssuedDate = creditCard.IssuedDate,
+                        TotalAmountSpent = totalAmountSpent,
                     };
                     return response;
                 }
@@ -146,6 +151,38 @@ namespace CCMS3.Services.Implementations
             }
         }
 
+        public CreditCardResponse GetCreditCardByUserId(string userId)
+        {
+            try
+            {
+                var creditCard = _creditCardRepository.GetCreditCardByPersonalDetailsId(userId);
+                if (creditCard == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    return new CreditCardResponse
+                    {
+                        Id = creditCard.Id,
+                        Balance = creditCard.Balance,
+                        CreditLimit = creditCard.CreditLimit,
+                        CVV = creditCard.CVV,
+                        ExpirationDate = creditCard.ExpirationDate,
+                        InterestRate = creditCard.InterestRate,
+                        CardHolderName = creditCard.CardHolderName,
+                        CardNumber = creditCard.CardNumber,
+                        IssuedDate = creditCard.IssuedDate,
+                        TotalAmountSpent = creditCard.Transactions.Sum(t => t.Amount)
+                    };
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.Message, e);
+                throw;
+            }
+        }
         public CreditCardResponse UpdateCreditCard(CreditCardRequest request)
         {
             throw new NotImplementedException();

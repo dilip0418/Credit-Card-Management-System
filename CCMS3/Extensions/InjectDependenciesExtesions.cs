@@ -18,13 +18,19 @@ namespace CCMS3.Extensions
             
             services.AddScoped<UserService>();
             
-            services.AddTransient<IEmailService, EmailServiceImpl>();
+            services.AddScoped<IEmailService, EmailServiceImpl>();
             
             services.AddScoped<ICreditCardApplicationRepository,CreditCardApplicationRepositoryImpl>();
             services.AddScoped<ICreditCardApplicationservice, CreditCardApplicationService>();
 
             services.AddScoped<ICreditCardRepository, CreditCardRepository>();
             services.AddScoped<ICreditCardService, CreditCardService>();
+
+            services.AddScoped<ITransactionsRepository, TransactionsRepository>();
+            services.AddScoped<ITransactionsService, TransactionsService>();
+
+            services.AddScoped<SpendAnalysisService>();
+
             return services;
         }
     }

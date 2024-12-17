@@ -24,12 +24,12 @@ namespace CCMS3.Repositories.Implementations
         public CreditCardApplicationResponse CreateCreditCardApplication(CreditCardApplicationRequest application, string applicantId)
         {
             var transaction = _context.Database.BeginTransaction();
+
+            var personalDetails = _context.PersonalDetails.Include(u => u.User).FirstOrDefault(u => u.UserId.Equals(applicantId)) ?? throw new EntityNotFoundException("Complete your profile to apply for a credit card");
+            var applicationStatus = _context.ApplicationStatuses.Find(2) ?? throw new EntityNotFoundException("Failed to fetch Application Status"); // setting the application as "Applied".
+
             try
             {
-
-                var personalDetails = _context.PersonalDetails.Include(u => u.User).FirstOrDefault(u => u.UserId == _userService.GetUserId()) ?? throw new EntityNotFoundException("Failed to fetch PersonalDetails");
-                var applicationStatus = _context.ApplicationStatuses.Find(2) ?? throw new EntityNotFoundException("Failed to fetch Application Status"); // setting the application as "Applied".
-
                 var newApplication = new CreditCardApplication
                 {
                     PersonalDetails = personalDetails!,
@@ -45,27 +45,37 @@ namespace CCMS3.Repositories.Implementations
                 _context.CreditCardApplications.Add(newApplication);
                 var affectedRows = _context.SaveChanges();
 
+
                 if (affectedRows > 0)
                 {
+                    var createdApplication = _context.CreditCardApplications
+                        .Include(p => p.PersonalDetails)
+                        .ThenInclude(p => p.User)
+                        .Include(p => p.PersonalDetails.EmploymentStatus)
+                        .Include(a => a.ApplicationStatus)
+                        .FirstOrDefault(p => p.PersonalDetailsId.Equals(personalDetails.UserId));
+
                     var response = new CreditCardApplicationResponse
                     {
-                        PhoneNo = newApplication.PhoneNo,
-                        Email = newApplication.Email,
-                        AnnualIncome = newApplication.AnnualIncome,
-                        ApplicationDate = newApplication.ApplicationDate,
-                        ApplicationStatus = newApplication.ApplicationStatus.Name,
-                        FullName = newApplication.PersonalDetails.User.FullName,
-                        Id = newApplication.Id
+                        PhoneNo = createdApplication.PhoneNo,
+                        Email = createdApplication.Email,
+                        AnnualIncome = createdApplication.AnnualIncome,
+                        ApplicationDate = createdApplication.ApplicationDate,
+                        ApplicationStatus = createdApplication.ApplicationStatus.Name,
+                        FullName = createdApplication.PersonalDetails.User.FullName,
+                        ApplicationStatusId = createdApplication.ApplicationStatusId,
+                        EmploymentStatus = createdApplication.PersonalDetails.EmploymentStatus.Status,
+                        Id = createdApplication.Id
                     };
+                    transaction.Commit();
                     return response;
                 }
-                transaction.Commit();
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Message, ex);
                 transaction.Rollback();
-                return null;
+                throw;
             }
             return null;
         }
@@ -97,17 +107,22 @@ namespace CCMS3.Repositories.Implementations
             try
             {
 
-                var applications = _context.CreditCardApplications.Select(ca => new CreditCardApplicationResponse
-                {
-                    Id = ca.Id,
-                    FullName = ca.PersonalDetails.User.FullName,
-                    ApplicationDate = ca.ApplicationDate,
-                    Email = ca.Email,
-                    PhoneNo = ca.PhoneNo,
-                    ApplicationStatusId = ca.ApplicationStatusId,
-                    ApplicationStatus = ca.ApplicationStatus.Name,
-                    AnnualIncome = ca.PersonalDetails.AnnualIncome
-                }).ToListAsync().Result;
+                var applications = _context.CreditCardApplications
+                    .Include(p => p.PersonalDetails)
+                    .ThenInclude(u => u.User)
+                    .Include(p => p.PersonalDetails.EmploymentStatus)
+                    .Include(s => s.ApplicationStatus)
+                    .Select(ca => new CreditCardApplicationResponse
+                    {
+                        Id = ca.Id,
+                        FullName = ca.PersonalDetails.User.FullName,
+                        ApplicationDate = ca.ApplicationDate,
+                        Email = ca.Email,
+                        PhoneNo = ca.PhoneNo,
+                        ApplicationStatusId = ca.ApplicationStatusId,
+                        ApplicationStatus = ca.ApplicationStatus.Name,
+                        AnnualIncome = ca.PersonalDetails.AnnualIncome
+                    }).ToListAsync().Result;
 
                 if (applications.Count != 0)
                 {
@@ -131,8 +146,10 @@ namespace CCMS3.Repositories.Implementations
             {
                 // Querying with filtering and projecting to the required fields
                 var query = _context.CreditCardApplications
-                    .Include(ca => ca.PersonalDetails)
-                    .Include(ca => ca.ApplicationStatus)  // Assuming ApplicationStatus is a navigational property
+                    .Include(p => p.PersonalDetails)
+                    .ThenInclude(p => p.User)
+                    .Include(p => p.PersonalDetails.EmploymentStatus)
+                    .Include(a => a.ApplicationStatus)  // Assuming ApplicationStatus is a navigational property
                     .AsQueryable();
 
                 // Apply filters
@@ -186,7 +203,8 @@ namespace CCMS3.Repositories.Implementations
                     PhoneNo = ca.PhoneNo,
                     ApplicationStatusId = ca.ApplicationStatusId,
                     ApplicationStatus = ca.ApplicationStatus.Name,
-                    AnnualIncome = ca.PersonalDetails.AnnualIncome
+                    AnnualIncome = ca.PersonalDetails.AnnualIncome,
+                    EmploymentStatus = ca.PersonalDetails.EmploymentStatus.Status
                 }).ToListAsync();
 
                 return (totalRecords, result);
@@ -204,8 +222,20 @@ namespace CCMS3.Repositories.Implementations
             return _context.CreditCardApplications
                 .Include(p => p.PersonalDetails)
                 .ThenInclude(u => u.User)
+                .Include(p => p.PersonalDetails.EmploymentStatus)
                 .Include(s => s.ApplicationStatus)
                 .FirstOrDefault(c => c.Id == id) ?? throw new EntityNotFoundException($"No application found with id: {id}");
+        }
+
+        public CreditCardApplication GetApplicationByUserId(string userId)
+        {
+            var application = _context.CreditCardApplications
+                .Include(p => p.PersonalDetails)
+                .ThenInclude(u => u.User)
+                .Include(p => p.PersonalDetails.EmploymentStatus)
+                .Include(s => s.ApplicationStatus)
+                .FirstOrDefault(c => c.PersonalDetailsId.Equals(userId));
+            return application!;
         }
 
         public CreditCardApplication UpdateApplicationStatus(ApplicationStatusUpdateRequest request)

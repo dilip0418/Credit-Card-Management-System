@@ -14,7 +14,7 @@
             TotalRecords = totalRecords;
             PageSize = pageSize;
             CurrentPage = currentPage;
-            TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+            TotalPages = totalRecords > 0 ? (int)Math.Ceiling(totalRecords / (double)pageSize) : 0;
             CurrentPage = currentPage > 0 ? currentPage : 1;
         }
 

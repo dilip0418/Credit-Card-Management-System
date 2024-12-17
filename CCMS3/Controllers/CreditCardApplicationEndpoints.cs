@@ -3,6 +3,7 @@ using CCMS3.Models;
 using CCMS3.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using System.ComponentModel.DataAnnotations;
 
 namespace CCMS3.Controllers
@@ -11,6 +12,7 @@ namespace CCMS3.Controllers
     public class CreditCardApplicationRequest
     {
         public int Id { get; set; }
+        public string ApplicantId { get; set; }
         public string FullName { get; set; }
         public DateTime ApplicationDate { get; set; }
         public DateTime LastUpdatedDate { get; set; }
@@ -34,6 +36,7 @@ namespace CCMS3.Controllers
         public int ApplicationStatusId { get; set; }
         public string ApplicationStatus { get; set; }
         public decimal AnnualIncome { get; set; }
+        public string EmploymentStatus { get; set; }
     }
 
     public class ApplicationStatusUpdateRequest
@@ -43,7 +46,7 @@ namespace CCMS3.Controllers
         public string Comments { get; set; }
     }
 
-    
+
     public static class CreditCardApplicationEndpoints
     {
         public static IEndpointRouteBuilder MapCreditCardApplicationEnpoints(this IEndpointRouteBuilder app)
@@ -53,7 +56,8 @@ namespace CCMS3.Controllers
             app.MapPost("/filter", GetAllApplicationsPaged);
             app.MapPost("/create", CreateApplication);
             app.MapPost("/update", UpdateApplication);
-            app.MapDelete("/{id}",DeleteApplicationById);
+            app.MapDelete("/{id}", DeleteApplicationById);
+            app.MapPost("/update-status", UpdateApplicationStatus);
             return app;
         }
 
@@ -79,7 +83,7 @@ namespace CCMS3.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
+
         public static ApiResponse<PagedResponse<CreditCardApplicationResponse>> GetAllApplicationsPaged(
             [FromBody] CreditCardApplicationParams creditCardApplicationParams,
             ICreditCardApplicationservice creditCardApplicationservice)
@@ -109,7 +113,7 @@ namespace CCMS3.Controllers
             }
         }
 
-        [Authorize]
+        //[Authorize]
         public static ApiResponse<CreditCardApplicationResponse> CreateApplication(
             ICreditCardApplicationservice creditCardApplicationservice,
             [FromBody] CreditCardApplicationRequest applicationRequest)
@@ -125,6 +129,12 @@ namespace CCMS3.Controllers
                 {
                     return new ApiResponse<CreditCardApplicationResponse>(StatusCodes.Status200OK, response, "Successfully applied an application");
                 }
+            }
+            catch(InvalidOperationException e)
+            {
+                Log.Error(e, e.Message);
+                return new ApiResponse<CreditCardApplicationResponse>(StatusCodes.Status400BadRequest, [e.Message]);
+
             }
             catch (Exception ex)
             {
@@ -208,6 +218,28 @@ namespace CCMS3.Controllers
             catch (Exception e)
             {
                 return new ApiResponse<string>(StatusCodes.Status500InternalServerError, [e.Message]);
+            }
+        }
+
+        public static ApiResponse<CreditCardApplicationResponse> GetApplicationByUser(
+            [FromQuery] string userId,
+            ICreditCardApplicationservice creditCardApplicationservice)
+        {
+            try
+            {
+                var response = creditCardApplicationservice.GetApplicationByUser(userId);
+                if (response == null)
+                {
+                    return new ApiResponse<CreditCardApplicationResponse>(StatusCodes.Status404NotFound, default, "No Application found for this user.");
+                }
+                else
+                {
+                    return new ApiResponse<CreditCardApplicationResponse>(StatusCodes.Status200OK, response, "Successfully found application.");
+                }
+            }
+            catch (Exception e)
+            {
+                return new ApiResponse<CreditCardApplicationResponse>(StatusCodes.Status500InternalServerError, [e.Message]);
             }
         }
     }

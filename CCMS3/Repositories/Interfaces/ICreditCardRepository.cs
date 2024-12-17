@@ -11,5 +11,7 @@ namespace CCMS3.Repositories.Interfaces
         public CreditCard UpdateCreditCard(CreditCard creditCard);
         public void DeleteCreditCard(int id);
         public CreditCard CreateCreditCard(CreditCard creditCard);
+
+        public Task UpdateBalanceAsync(int cardId, int type, decimal amount);
     }
 }

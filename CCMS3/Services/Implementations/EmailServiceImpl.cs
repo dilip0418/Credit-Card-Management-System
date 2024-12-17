@@ -33,7 +33,7 @@ namespace CCMS3.Services.Implementations
         public async Task SendMailAsync(Mailrequest mailRequest)
         {
             var email = new MimeMessage();
-            email.Sender = MailboxAddress.Parse(_emailSettings.Email);
+            email.Sender = MailboxAddress.Parse(mailRequest.FromEmail ?? _emailSettings.Email);
             email.To.Add(MailboxAddress.Parse(mailRequest.ToEmail));
             email.Subject = mailRequest.Subject;
 
@@ -63,16 +63,10 @@ namespace CCMS3.Services.Implementations
         public async Task SendActivationEmailAsync(ActivateAccountDto model)
         {
 
-            // TODO: Implement error case
-            //var user = _context.Users.FirstOrDefault(u => u.Email == email);
-            //if (user == null)
-            //{
-            //}
-
-            string activationUrl = $"http://localhost:5135/api/auth/activate-user?email={Uri.EscapeDataString(model.Email)}&code={model.ActivationCode}";
+           string activationUrl = $"http://localhost:5135/api/auth/activate-user?email={Uri.EscapeDataString(model.Email)}&code={model.ActivationCode}";
             var body = $"<p>Please activate your account by clicking the link below:</p>" +
                        $"<p><a href=\"{activationUrl}\" > Activate Account </ a ></ p > " +
-                       $"<p>This link expires in 15 minutes.</p>";
+                       $"<button style=\"background:red; cursor:pointer\">Login</button>" ;
 
             var mailRequest = new Mailrequest
             {

@@ -65,6 +65,20 @@ namespace CCMS3.Services.Implementations
         }
 
         public static string GenerateActivationCode() => new Random().Next(100000, 999999).ToString();
-    }
 
+        public AppUser GetUserById(string id)
+        {
+            try
+            {
+                return _context.Users
+                    .Include(p => p.PersonalDetails)
+                    .FirstOrDefault(p => id.Equals(p.Id))!;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message, ex);
+                throw;
+            }
+        }
+    }
 }

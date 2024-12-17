@@ -10,7 +10,7 @@
         public decimal? MinAnnualIncome { get; set; }  // Minimum annual income for filtering
         public decimal? MaxAnnualIncome { get; set; }  // Maximum annual income for filtering
 
-        public int? ApplicationStatusId { get; set; } // Filter by application status Accepted, Rejected, Applied, Saved
+        public int? ApplicationStatusId { get; set; } // Filter by application status Accepted(3), Rejected(4), Applied(2), Saved(1)
         // Sorting parameters
         public string? SortBy { get; set; }  // Field to sort by (e.g., "ApplicationDate", "FullName", etc.)
         public bool SortDescending { get; set; } = false;  // Ascending by default

@@ -14,5 +14,9 @@ namespace CCMS3.Services.Interfaces
         public PersonalDetails GetPersonalDetailsById(string id);
 
         public bool HasPersonalDetails(string userId);
+
+        public Task<PagedResponse<UserCreditCardStatus>> GetUserCreditCardStatusesAsync(int pageNumber, int pageSize);
+
+        public UserCreditCardStatus GetUserCreditCardStatus(string userId);
     }
 }

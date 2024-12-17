@@ -13,5 +13,11 @@ namespace CCMS3.Repositories.Interfaces
         public Task<(int, IEnumerable<PersonalDetailsRepsonse>)> GetAllPersonalDetailsPaged(PersonalDetailsParams _params);
         public PersonalDetails? GetPersonalDetailsById(string id);
         public bool HasPersonalDetails(string userId);
+
+        public Task<IEnumerable<UserCreditCardStatus>> GetUserCreditCardStatuses(int pageNumber, int pageSize);
+
+        public Task<int> GetTotalPersonalDetailsCountAsync();
+
+        public UserCreditCardStatus GetCardStatusByUserId(string userId);
     }
 }

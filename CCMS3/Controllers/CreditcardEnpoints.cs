@@ -28,8 +28,8 @@ namespace CCMS3.Controllers
         public decimal Balance { get; set; }
         [Precision(18, 2)]
         public decimal InterestRate { get; set; } = 0.2M; // defaulting to 20%
+        public decimal TotalAmountSpent { get; set; }
     }
-
     public class CreditCardRequest
     {
         public int Id { get; set; }
@@ -56,6 +56,7 @@ namespace CCMS3.Controllers
             app.MapGet("/", GetAllCards);
             app.MapGet("/{id}", GetCreditCardById);
             app.MapDelete("/{id}", DeleteCreditCardById);
+            app.MapGet("/user-card/{userId}", GetCreditCardByUserId);
             return app;
         }
 
@@ -97,6 +98,28 @@ namespace CCMS3.Controllers
 
                 else
                     return new ApiResponse<CreditCardResponse>(StatusCodes.Status200OK, card);
+            }
+            catch (Exception e)
+            {
+                return new ApiResponse<CreditCardResponse>(StatusCodes.Status500InternalServerError, [e.Message]);
+            }
+        }
+
+
+        public static ApiResponse<CreditCardResponse> GetCreditCardByUserId(ICreditCardService creditCardService,
+            string userId)
+        {
+            try
+            {
+                var creditCard = creditCardService.GetCreditCardByUserId(userId);
+                if (creditCard == null)
+                {
+                    return new ApiResponse<CreditCardResponse>(StatusCodes.Status404NotFound, null, "No credit yet, Please apply for one!");
+                }
+                else
+                {
+                    return new ApiResponse<CreditCardResponse>(StatusCodes.Status200OK, creditCard, "Found CreditCard");
+                }
             }
             catch (Exception e)
             {

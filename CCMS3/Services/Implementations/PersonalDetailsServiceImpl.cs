@@ -6,6 +6,7 @@ using Serilog;
 using CCMS3.Data;
 using CCMS3.Helpers.PageFilters;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 
 namespace CCMS3.Services.Implementations
 {
@@ -33,6 +34,7 @@ namespace CCMS3.Services.Implementations
                 };
                 var details = new PersonalDetails
                 {
+                    AnnualIncome = request.AnnualIncome,
                     DateOfBirth = request.DOB,
                     Address = Address,
                     EmploymentStatus = _context.EmploymentStatuses.Find(request.EmploymentStatusId)!
@@ -105,7 +107,7 @@ namespace CCMS3.Services.Implementations
         {
             if (!(!id.IsNullOrEmpty()))
                 throw new InvalidDataException("Id Should be an integer");
-            return _personalDetailsRepository.GetPersonalDetailsById(id);
+            return _personalDetailsRepository.GetPersonalDetailsById(id)!;
 
         }
 
@@ -126,6 +128,33 @@ namespace CCMS3.Services.Implementations
         public PersonalDetails UpdatePersonalDetails(PersonalDetailsRequest request)
         {
             return _personalDetailsRepository.UpdatePersonalDetails(request);
+        }
+
+
+        /*
+         * Fetch the user with their credit cards.
+         * { userId, userEmail, status [HasCreditCard | NoCreditCard] , applicationStatus [Initailly set as 
+         * (NotApplied | null)] }
+         * 
+         * Fetch CreditCardApplications for all the users from the previous response with status as "NoCreditCard" and 
+         * mark applicationStatus as [null | NotApplied]
+         * 
+         * Finally return the populated List.
+         */ 
+
+        public async Task<PagedResponse<UserCreditCardStatus>> GetUserCreditCardStatusesAsync(int pageNumber, int pageSize)
+        {
+            var userCardStatus = await _personalDetailsRepository.GetUserCreditCardStatuses(pageNumber, pageSize);
+            var totalRecords = await _personalDetailsRepository.GetTotalPersonalDetailsCountAsync();
+
+            var pagedResponse = new PagedResponse<UserCreditCardStatus>(userCardStatus, totalRecords, pageNumber, pageSize);
+
+            return pagedResponse;
+        }
+
+        public UserCreditCardStatus GetUserCreditCardStatus(string userId)
+        {
+            return _personalDetailsRepository.GetCardStatusByUserId(userId);
         }
     }
 }

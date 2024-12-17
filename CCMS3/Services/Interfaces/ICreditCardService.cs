@@ -9,5 +9,6 @@ namespace CCMS3.Services.Interfaces
         public CreditCardResponse UpdateCreditCard(CreditCardRequest request);
         public void DeleteCreditCard(int id);
         public IEnumerable<CreditCardResponse> GetAllCreditCards();
+        public CreditCardResponse GetCreditCardByUserId(string userId);
     }
 }

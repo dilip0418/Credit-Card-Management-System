@@ -78,11 +78,9 @@ namespace CCMS3.Repositories.Implementations
 
         public CreditCard GetCreditCardByPersonalDetailsId(string id)
         {
-
-            var card = _context.CreditCards.FirstOrDefault(c => c.PersonalDetailsId.Equals(id)) ?? throw new EntityNotFoundException("No Card found apply for one.");
-
-            return card;
-
+            return _context.CreditCards
+                .Include(t => t.Transactions)
+                .FirstOrDefault(c => c.PersonalDetailsId.Equals(id));
         }
 
         public IEnumerable<CreditCard> GetCreditCards()
@@ -104,6 +102,21 @@ namespace CCMS3.Repositories.Implementations
             }
 
 
+        }
+
+        public async Task UpdateBalanceAsync(int cardId, int type, decimal amount)
+        {
+            var card = await _context.CreditCards.FindAsync(cardId);
+            if(type == 2)
+            {
+                card.Balance -= amount;
+            }
+            else
+            {
+                card.Balance += amount;
+            }
+            _context.Update(card);
+            await _context.SaveChangesAsync();
         }
 
         public CreditCard UpdateCreditCard(CreditCard creditCard)

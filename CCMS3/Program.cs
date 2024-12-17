@@ -39,6 +39,14 @@ builder.Services.InjectHealthChecks(builder.Configuration);
 
 var app = builder.Build();
 
+app.UseCors(options =>
+{
+    options.AllowAnyOrigin();
+    options.AllowAnyMethod();
+    options.AllowAnyHeader();
+});
+
+
 app.UseHealthCheck();
 
 await app.Services.SeedAdminUserAsync();
@@ -51,10 +59,7 @@ app.MapControllers();
 
 app.UseMiddleware<PdfCompressionMiddleware>();
 
-//app.MapGroup("/api")
-//    .MapIdentityApi<AppUser>();
-
-app.MapAuthorizationDemoEndpoints();
+app.MapContactEnpoints();
 
 app.MapGroup("/api/auth")
     .MapIdentityUserEndpoints();
@@ -71,6 +76,19 @@ app.MapGroup("/api/creditCardApplications")
 app.MapGroup("/api/creditCards")
     .MapCreditCardEndpoints();
 
+app.MapGroup("/api/transactions")
+    .MapTransactionEnpoints();
 
+app.MapGroup("/api/stats")
+    .MapSpendAnalysisEndpoints();
+
+app.MapGroup("/api/state-city")
+    .MapStateCityEnpoints();
+
+
+//app.MapGroup("/api")
+//    .MapIdentityApi<AppUser>();
+
+app.MapAuthorizationDemoEndpoints();
 
 await app.RunAsync();

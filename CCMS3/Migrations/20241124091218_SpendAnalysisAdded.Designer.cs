@@ -4,6 +4,7 @@ using CCMS3.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CCMS3.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241124091218_SpendAnalysisAdded")]
+    partial class SpendAnalysisAdded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -386,7 +389,8 @@ namespace CCMS3.Migrations
                     b.HasIndex("AddressId")
                         .IsUnique();
 
-                    b.HasIndex("EmploymentStatusId");
+                    b.HasIndex("EmploymentStatusId")
+                        .IsUnique();
 
                     b.ToTable("PersonalDetails");
                 });
@@ -715,8 +719,8 @@ namespace CCMS3.Migrations
                         .IsRequired();
 
                     b.HasOne("CCMS3.Models.EmploymentStatus", "EmploymentStatus")
-                        .WithMany()
-                        .HasForeignKey("EmploymentStatusId")
+                        .WithOne()
+                        .HasForeignKey("CCMS3.Models.PersonalDetails", "EmploymentStatusId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

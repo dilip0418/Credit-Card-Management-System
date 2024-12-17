@@ -22,6 +22,8 @@ namespace CCMS3.Data
         public DbSet<TransactionType> TransactionTypes { get; set; }
         public DbSet<Category> Categories { get; set; }
 
+        public DbSet<SpendAnalysis> SpendAnalyses { get; set; }
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         { }
 
@@ -41,8 +43,8 @@ namespace CCMS3.Data
 
             builder.Entity<PersonalDetails>()
                 .HasOne(pd => pd.EmploymentStatus)
-                .WithOne()
-                .HasForeignKey<PersonalDetails>(pd => pd.EmploymentStatusId);
+                .WithMany()
+                .HasForeignKey(pd => pd.EmploymentStatusId);
 
             builder.Entity<PersonalDetails>()
                 .HasOne(pd => pd.Address)

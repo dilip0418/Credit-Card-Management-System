@@ -8,6 +8,9 @@
         // You may want to restrict the maximum PageSize
         public const int MaxPageSize = 50;
 
+        // Sorting parameters
+        public string? SortBy { get; set; }  // Field to sort by
+        public bool SortDescending { get; set; } = false;  // Ascending by default
 
         public int ValidPageNumber
         {

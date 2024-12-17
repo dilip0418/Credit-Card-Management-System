@@ -11,10 +11,6 @@
         public DateOnly? DateOfBirthAfter { get; set; }
         public string? EmploymentStatus { get; set; }  // "Employed" or "Unemployed"
         public decimal? MinAnnualIncome { get; set; }
-        public decimal? MaxAnnualIncome { get; set; }
-
-        // Sorting parameters
-        public string? SortBy { get; set; }  // Field to sort by
-        public bool SortDescending { get; set; } = false;  // Ascending by default
+        public decimal? MaxAnnualIncome { get; set; }        
     }
 }

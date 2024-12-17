@@ -34,7 +34,16 @@ namespace CCMS3.Services.Implementations
         {
             try
             {
-                var applicantId = _userService.GetUserId();
+                var applicantId = _userService.GetUserId() ?? application.ApplicantId;
+                var existingApplication = this.GetApplicationByUser(applicantId);
+
+                if (existingApplication != null)
+                {
+                    if (existingApplication.ApplicationStatusId == 2 || existingApplication.ApplicationStatusId == 4)
+                    {
+                        throw new InvalidOperationException("User already has application in process");
+                    }
+                }
 
                 var newApplication = _creditCardApplicationRepository.CreateCreditCardApplication(application, applicantId);
 
@@ -101,7 +110,9 @@ namespace CCMS3.Services.Implementations
                 ApplicationStatus = application.ApplicationStatus.Name,
                 Email = application.Email,
                 PhoneNo = application.PhoneNo,
-                AnnualIncome = default
+                AnnualIncome = default,
+                EmploymentStatus = application.PersonalDetails.EmploymentStatus.Status,
+                ApplicationDate = application.ApplicationDate
             };
         }
 
@@ -147,7 +158,7 @@ namespace CCMS3.Services.Implementations
             catch (Exception e)
             {
                 Log.Error(e, e.Message);
-                return e.Message;
+                throw;
             }
 
         }
@@ -187,7 +198,7 @@ namespace CCMS3.Services.Implementations
                     IssuedDate = creditCard.IssuedDate,
                 };
                 //Initite mail sending service
-                await _emailService.SendAcceptedCreditCardStatus(emailPayload, userDetails.User.Email!);
+                await _emailService.SendAcceptedCreditCardStatus(emailPayload, application.Email!);
 
                 return creditCard.CardNumber;
 
@@ -248,6 +259,30 @@ namespace CCMS3.Services.Implementations
             }
         }
 
+        public CreditCardApplicationResponse GetApplicationByUser(string userId)
+        {
+            var application = _creditCardApplicationRepository.GetApplicationByUserId(userId);
+            if (application == null)
+            {
+                return default;
+            }
+            else
+            {
+                var response = new CreditCardApplicationResponse
+                {
+                    Id = application.Id,
+                    ApplicationStatusId = application.ApplicationStatusId,
+                    ApplicationStatus = application.ApplicationStatus.Name,
+                    AnnualIncome = application.AnnualIncome,
+                    ApplicationDate = application.ApplicationDate,
+                    Email = application.Email,
+                    FullName = application.PersonalDetails.User.FullName,
+                    PhoneNo = application.PhoneNo,
+                    EmploymentStatus = application.PersonalDetails.EmploymentStatus.Status,
+                };
+                return response;
+            }
+        }
     }
 
     public class RejectedCreditCardResponse

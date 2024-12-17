@@ -25,6 +25,14 @@ namespace CCMS3.Controllers
         public string Password { get; set; }
         public string FullName { get; set; }
     }
+
+    public class UserResponse()
+    {
+        public string UserId { get; set; }
+        public string UserEmail { get; set; }
+        public bool IsProfileComplete { get; set; }
+        public string FullName { get; set; }
+    }
     public static class UserEndpoints
     {
         public static IEndpointRouteBuilder MapIdentityUserEndpoints(
@@ -33,15 +41,16 @@ namespace CCMS3.Controllers
             app.MapPost("/signup", CreateUser);
             app.MapPost("/signin", SignIn);
             app.MapGet("/activate-user", ActivateUser);
+            app.MapGet("/{id}", GetUserById);
             return app;
         }
 
 
         private static async Task<IResult> CreateUser(
-    UserManager<AppUser> userManager,
-    RoleManager<IdentityRole> roleManager,
-    IEmailService emailService,
-    [FromBody] RegistrationModel userRegistrationModel)
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IEmailService emailService,
+            [FromBody] RegistrationModel userRegistrationModel)
         {
             var activationCode = UserService.GenerateActivationCode();
             AppUser user = new()
@@ -137,7 +146,7 @@ namespace CCMS3.Controllers
                 try
                 {
                     await emailService.SendActivationEmailAsync(activateAccountDto);
-                    return Results.Problem( "Your account is inactive. An activation link has been sent to your email!");
+                    return Results.Problem("Your account is inactive. An activation link has been sent to your email!");
                 }
                 catch (Exception ex)
                 {
@@ -157,10 +166,10 @@ namespace CCMS3.Controllers
             var signInKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings.Value.JWTSecretKey));
             ClaimsIdentity claims = new ClaimsIdentity(new[]
             {
-        new Claim("UserID", user.Id.ToString()),
-        new Claim(ClaimTypes.Role, roles[0]), // Be cautious about index access
-        new Claim(ClaimTypes.Email, user.Email) // Optional: add email claim
-    });
+                new Claim("UserID", user.Id.ToString()),
+                new Claim(ClaimTypes.Role, roles[0]), // Be cautious about index access
+                new Claim(ClaimTypes.Email, user.Email) // Optional: add email claim
+            });
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -172,14 +181,14 @@ namespace CCMS3.Controllers
             var tokenHandler = new JwtSecurityTokenHandler();
             var securityToken = tokenHandler.CreateToken(tokenDescriptor);
             var token = tokenHandler.WriteToken(securityToken);
-            return Results.Ok(new { token });
+            return Results.Ok(new { token, user.Id });
         }
 
         private static async Task<ApiResponse<string>> ActivateUser(
             IEmailService emailService,
-    UserService userService,
-    [FromQuery] string email,
-    [FromQuery] string code)
+            UserService userService,
+            [FromQuery] string email,
+            [FromQuery] string code)
         {
             try
             {
@@ -203,5 +212,32 @@ namespace CCMS3.Controllers
         }
 
 
+        private static ApiResponse<UserResponse> GetUserById(
+            string id,
+            UserService userService
+            )
+        {
+            try
+            {
+                var user = userService.GetUserById(id);
+                if (user == null)
+                {
+                    return new ApiResponse<UserResponse>(StatusCodes.Status404NotFound, ["user not found"]);
+                }
+                var response = new UserResponse
+                {
+                    UserId = user.Id,
+                    FullName = user.FullName,
+                    UserEmail = user.Email,
+                    IsProfileComplete = (user.PersonalDetails != null)
+                };
+
+                return new ApiResponse<UserResponse>(StatusCodes.Status200OK, response, "User found successfully");
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<UserResponse>(StatusCodes.Status500InternalServerError, [ex.Message]);
+            }
+        }
     }
 }
