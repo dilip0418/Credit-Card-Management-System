@@ -1,0 +1,30 @@
+networks:
+  demowebapp:
+
+services:
+  ccmsdb:
+    container_name: app-db
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - 8002:1433
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Krishna123#
+    networks:
+      - demowebapp
+  ccms3:
+    container_name: ccms3-web-app
+    image: ${DOCKER_REGISTRY-}ccms3
+    build:
+      context: .
+      dockerfile: CCMS3/Dockerfile
+    ports:
+      - 8001:80
+    depends_on:
+      - ccmsdb
+    environment:
+      - DB_HOST=ccmsdb
+      - DB_NAME=ccms
+      - DB_SA_PASSWORD=Krishna123#
+    networks:
+      - demowebapp
