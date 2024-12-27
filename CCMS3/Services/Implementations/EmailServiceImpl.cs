@@ -55,7 +55,9 @@ namespace CCMS3.Services.Implementations
 
             using var smtp = new SmtpClient();
             await smtp.ConnectAsync(_emailSettings.Host, _emailSettings.Port, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(_emailSettings.Email, _emailSettings.Password);
+            var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
+            var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
+            await smtp.AuthenticateAsync(adminEmail, adminPassword);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
         }

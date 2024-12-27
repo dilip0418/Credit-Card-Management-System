@@ -19,7 +19,7 @@ services:
       context: .
       dockerfile: CCMS3/Dockerfile
     ports:
-      - 8001:80
+      - 8001:8080
     depends_on:
       - ccmsdb
     environment:
@@ -28,3 +28,16 @@ services:
       - DB_SA_PASSWORD=Krishna123#
     networks:
       - demowebapp
+  frontend:
+    container_name: ccms-frontend
+    build:
+      context: D:/Synergech_Assessments/frontend/project/ccms # Adjust this path based on your directory structure
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80" # Frontend will be accessible on port 3000
+    depends_on:
+      - ccms3
+    networks:
+      - demowebapp
+    environment:
+      - VITE_REACT_APP_API_BASE_URL=http://localhost:8001/api

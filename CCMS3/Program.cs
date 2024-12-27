@@ -35,7 +35,7 @@ builder.Services.AddHttpClient<StateCityService>();
 builder.Services.InjectDependencies();
 
 // configure HealthChecks
-builder.Services.InjectHealthChecks(builder.Configuration);
+//builder.Services.InjectHealthChecks(builder.Configuration);
 
 var app = builder.Build();
 
@@ -47,7 +47,7 @@ app.UseCors(options =>
 });
 
 
-app.UseHealthCheck();
+//app.UseHealthCheck();
 
 await app.Services.SeedAdminUserAsync();
 await app.SeedDatabaseAsync();

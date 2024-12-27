@@ -36,7 +36,8 @@ namespace CCMS3.Services
             AppDbContext context)
         {
             _httpClient = httpClient;
-            _apiKey = configuration["RapidApiKey"]; // Using binding to access API key
+            //_apiKey = configuration["RapidApiKey"]; // Using binding to access API key
+            _apiKey = Environment.GetEnvironmentVariable("RAPIDAPI_KEY")!; // Using environment variable to access API key
             _context = context;
         }
 

@@ -35,7 +35,8 @@ namespace CCMS3.Extensions
                     UserName = "admin",
                     Email = adminEmail,
                     EmailConfirmed = false,
-                    FullName = "Admin123"
+                    FullName = "Admin123",
+                    IsActive=true
                 };
 
                 var result = await userManager.CreateAsync(adminUser, adminPassword);
